@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Сверка документов — Результаты</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, system-ui, sans-serif;
+    background: #f7f8fa;
+    color: #18181b;
+    display: flex;
+    flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ===== Top bar ===== */
+  .topbar {
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 0 40px;
+  }
+  .topbar-inner {
+    max-width: 1180px;
+    margin: 0 auto;
+    height: 64px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 24px;
+  }
+  .brand   { justify-self: start; }
+  .stepper { justify-self: center; }
+  .helper  { justify-self: end; }
+  .brand {
+    display: flex; align-items: center; gap: 12px;
+    font-weight: 700; font-size: 15px; letter-spacing: -0.01em;
+  }
+  .brand-mark {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: linear-gradient(135deg, #18181b 0%, #3f3f46 100%);
+    display: grid; place-items: center; color: #fff;
+  }
+  .brand-mark svg { width: 16px; height: 16px; }
+
+  .stepper { display: flex; align-items: center; gap: 14px; }
+  .step { display: flex; align-items: center; gap: 10px; }
+  .step-circle {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: #e5e7eb; color: #6b7280;
+    display: grid; place-items: center;
+    font-size: 12px; font-weight: 700; transition: 0.18s;
+  }
+  .step.active .step-circle { background: #18181b; color: #fff; }
+  .step.done   .step-circle { background: #18181b; color: #fff; }
+  .step.done   .step-circle svg { width: 13px; height: 13px; }
+  .step-label { font-size: 13.5px; color: #6b7280; font-weight: 500; }
+  .step.active .step-label, .step.done .step-label { color: #18181b; font-weight: 600; }
+  .step-line  { width: 36px; height: 1.5px; background: #e5e7eb; border-radius: 2px; }
+  .step-line.done { background: #18181b; }
+
+  .helper {
+    font-size: 13.5px; color: #6b7280; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 8px; transition: 0.15s;
+  }
+  .helper:hover { background: #f3f4f6; color: #18181b; }
+
+  /* ===== Main ===== */
+  main { flex: 1; padding: 48px 40px 56px; display: flex; flex-direction: column; }
+  .container { width: 100%; max-width: 1180px; margin: 0 auto; flex: 1; display: flex; flex-direction: column; }
+
+  .page-head { margin-bottom: 28px; }
+  .page-title { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 8px 0; }
+  .page-sub { font-size: 15px; color: #6b7280; margin: 0; line-height: 1.5; }
+  .page-sub b { color: #18181b; font-weight: 600; }
+
+  /* Stats */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 30px;
+  }
+  .stat-card {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+    padding: 18px 22px;
+  }
+  .stat-value { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+  .stat-label { font-size: 13px; color: #6b7280; margin-top: 2px; }
+
+  /* Section title */
+  .list-head {
+    font-size: 15px; font-weight: 700; color: #18181b;
+    margin: 0 0 16px 0;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .list-head .count {
+    font-size: 12.5px; font-weight: 600; color: #6b7280;
+    background: #f3f4f6; padding: 3px 10px; border-radius: 999px;
+  }
+
+  /* Result card */
+  .result-card {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 14px;
+    padding: 22px 24px; margin-bottom: 16px;
+  }
+  .result-head {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+  }
+  .pair-title {
+    font-size: 14.5px; font-weight: 700; color: #18181b;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    line-height: 1.4;
+  }
+  .pair-doc { color: #6b7280; font-weight: 500; font-size: 12.5px; }
+  .pair-arrow { color: #9ca3af; }
+
+  .score-pill {
+    display: inline-flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    min-width: 70px; padding: 8px 14px; border-radius: 10px; flex-shrink: 0;
+  }
+  .score-value { font-size: 20px; font-weight: 700; line-height: 1; }
+  .score-name {
+    font-size: 9.5px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; margin-top: 4px; opacity: 0.85;
+  }
+  .score-high { background: #fef2f2; color: #b91c1c; }
+  .score-mid  { background: #fffbeb; color: #b45309; }
+
+  .fragments {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+    margin: 18px 0 16px;
+  }
+  .fragment-box {
+    background: #f9fafb; border: 1px solid #f0f1f3;
+    border-left: 3px solid #d1d5db; border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .fragment-label {
+    font-size: 10.5px; font-weight: 700; color: #9ca3af;
+    text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 7px;
+  }
+  .fragment-text { font-size: 13.5px; color: #374151; line-height: 1.55; }
+
+  .result-tag {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-size: 12.5px; font-weight: 600;
+    padding: 7px 12px; border-radius: 8px;
+    background: #fef3f2; color: #b42318;
+  }
+  .result-tag svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+  /* Footer actions */
+  .actions {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-top: 24px; margin-top: 8px; border-top: 1px solid #e5e7eb; gap: 16px;
+  }
+  .actions-info { font-size: 13.5px; color: #6b7280; }
+  .actions-buttons { display: flex; gap: 10px; }
+  .btn {
+    border: none; padding: 12px 24px; border-radius: 10px;
+    font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.15s;
+    display: inline-flex; align-items: center; gap: 8px; font-family: inherit;
+  }
+  .btn-primary { background: #18181b; color: #fff; }
+  .btn-primary:hover { background: #000; }
+  .btn-primary:active { transform: translateY(1px); }
+  .btn-secondary { background: #fff; color: #18181b; border: 1px solid #e5e7eb; }
+  .btn-secondary:hover { background: #f9fafb; border-color: #d1d5db; }
+  .btn-secondary:active { transform: translateY(1px); }
+  .btn svg { width: 16px; height: 16px; }
+
+  /* Responsive */
+  @media (max-width: 860px) {
+    .topbar { padding: 0 20px; }
+    .topbar-inner { display: flex; flex-wrap: wrap; justify-content: space-between; height: auto; padding: 12px 0; }
+    .stepper { order: 3; width: 100%; justify-content: center; padding-top: 8px; }
+    .helper { display: none; }
+    main { padding: 32px 20px; }
+    .stats { grid-template-columns: 1fr; }
+    .fragments { grid-template-columns: 1fr; }
+    .page-title { font-size: 24px; }
+    .actions { flex-direction: column-reverse; align-items: stretch; }
+    .actions-buttons { width: 100%; }
+    .actions-buttons .btn { flex: 1; justify-content: center; }
+  }
+  @media (max-width: 500px) {
+    .step-label { display: none; }
+    .step-line { width: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+  <div class="brand">
+    <div class="brand-mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <path d="M14 2v6h6"/><path d="M8 13h4"/><path d="M8 17h8"/>
+      </svg>
+    </div>
+    Сервис семантической сверки
+  </div>
+
+  <nav class="stepper" aria-label="Этапы">
+    <div class="step done">
+      <div class="step-circle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="step-label">Загрузка</div>
+    </div>
+    <div class="step-line done"></div>
+    <div class="step done">
+      <div class="step-circle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="step-label">Разделы</div>
+    </div>
+    <div class="step-line done"></div>
+    <div class="step active">
+      <div class="step-circle">3</div>
+      <div class="step-label">Результаты</div>
+    </div>
+  </nav>
+
+  <a class="helper" href="#" aria-label="Справка">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+      <circle cx="12" cy="12" r="10"/>
+      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+      <line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+    Справка
+  </a>
+  </div>
+</header>
+
+<main>
+  <div class="container">
+
+    <div class="page-head">
+      <h1 class="page-title">Результаты сверки</h1>
+      <p class="page-sub">Сверка завершена. Обнаружено <b>3 подозрительные пары фрагментов</b> с оценкой семантической близости выше порогового значения.</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-value">3</div>
+        <div class="stat-label">Подозрительных пар</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">0,75</div>
+        <div class="stat-label">Порог сходства τ</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">0,87</div>
+        <div class="stat-label">Наибольшая оценка сходства</div>
+      </div>
+    </div>
+
+    <h2 class="list-head">Выявленные пары <span class="count">по убыванию оценки</span></h2>
+
+    <div id="resultsList">
+
+      <!-- Result 1 -->
+      <div class="result-card">
+        <div class="result-head">
+          <div class="pair-title">
+            <span>Глава 1 <span class="pair-doc">· основной</span></span>
+            <span class="pair-arrow">↔</span>
+            <span>Раздел 1 <span class="pair-doc">· сравниваемый</span></span>
+          </div>
+          <div class="score-pill score-high">
+            <span class="score-value">0,87</span>
+            <span class="score-name">оценка S</span>
+          </div>
+        </div>
+        <div class="fragments">
+          <div class="fragment-box">
+            <div class="fragment-label">Фрагмент основного документа</div>
+            <div class="fragment-text">«Современные системы обнаружения текстовых заимствований используют преимущественно лексический анализ совпадающих фрагментов…»</div>
+          </div>
+          <div class="fragment-box">
+            <div class="fragment-label">Фрагмент сравниваемого документа</div>
+            <div class="fragment-text">«Применяемые программные средства выявления плагиата основаны на поиске совпадающих последовательностей слов…»</div>
+          </div>
+        </div>
+        <span class="result-tag">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          Подозрение на одинаковые формулировки
+        </span>
+      </div>
+
+      <!-- Result 2 -->
+      <div class="result-card">
+        <div class="result-head">
+          <div class="pair-title">
+            <span>Глава 2 <span class="pair-doc">· основной</span></span>
+            <span class="pair-arrow">↔</span>
+            <span>Раздел 2 <span class="pair-doc">· сравниваемый</span></span>
+          </div>
+          <div class="score-pill score-mid">
+            <span class="score-value">0,82</span>
+            <span class="score-name">оценка S</span>
+          </div>
+        </div>
+        <div class="fragments">
+          <div class="fragment-box">
+            <div class="fragment-label">Фрагмент основного документа</div>
+            <div class="fragment-text">«Математическая модель строится как ансамбль лексической, семантической и стилометрической мер близости…»</div>
+          </div>
+          <div class="fragment-box">
+            <div class="fragment-label">Фрагмент сравниваемого документа</div>
+            <div class="fragment-text">«Предлагаемый подход объединяет три различные метрики оценки близости текстовых фрагментов…»</div>
+          </div>
+        </div>
+        <span class="result-tag">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          Подозрение на одинаковые формулировки
+        </span>
+      </div>
+
+      <!-- Result 3 -->
+      <div class="result-card">
+        <div class="result-head">
+          <div class="pair-title">
+            <span>Глава 3 <span class="pair-doc">· основной</span></span>
+            <span class="pair-arrow">↔</span>
+            <span>Раздел 3 <span class="pair-doc">· сравниваемый</span></span>
+          </div>
+          <div class="score-pill score-mid">
+            <span class="score-value">0,78</span>
+            <span class="score-name">оценка S</span>
+          </div>
+        </div>
+        <div class="fragments">
+          <div class="fragment-box">
+            <div class="fragment-label">Фрагмент основного документа</div>
+            <div class="fragment-text">«Архитектура сервиса построена по принципу многоуровневого разделения функций обработки данных…»</div>
+          </div>
+          <div class="fragment-box">
+            <div class="fragment-label">Фрагмент сравниваемого документа</div>
+            <div class="fragment-text">«Структура программного решения реализована в виде трёхзвенной модульной системы…»</div>
+          </div>
+        </div>
+        <span class="result-tag">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          Подозрение на одинаковые формулировки
+        </span>
+      </div>
+
+    </div>
+
+    <div class="actions">
+      <div class="actions-info">Основной документ: example_1.docx · Сравниваемый: example_2.docx</div>
+      <div class="actions-buttons">
+        <button class="btn btn-secondary" id="newBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          </svg>
+          Новая сверка
+        </button>
+        <button class="btn btn-primary" id="exportBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Экспорт отчёта
+        </button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+  let data = null;
+  try {
+    const raw = sessionStorage.getItem('sverka_results');
+    if (raw) data = JSON.parse(raw);
+  } catch (e) { data = null; }
+
+  function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function fmt(x){return Number(x).toFixed(2).replace('.', ',');}
+
+  function severityClass(score){ return score >= 0.85 ? 'score-high' : 'score-mid'; }
+
+  function buildCard(r, idx){
+    return '<div class="result-card">' +
+      '<div class="result-head">' +
+        '<div class="pair-title">' +
+          '<span>' + escapeHtml(r.section_1) + ' <span class="pair-doc">· основной</span></span>' +
+          '<span class="pair-arrow">↔</span>' +
+          '<span>' + escapeHtml(r.section_2) + ' <span class="pair-doc">· сравниваемый</span></span>' +
+        '</div>' +
+        '<div class="score-pill ' + severityClass(r.score) + '">' +
+          '<span class="score-value">' + fmt(r.score) + '</span>' +
+          '<span class="score-name">оценка S</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="fragments">' +
+        '<div class="fragment-box"><div class="fragment-label">Фрагмент основного документа</div>' +
+          '<div class="fragment-text">«' + escapeHtml(r.fragment_1) + '»</div></div>' +
+        '<div class="fragment-box"><div class="fragment-label">Фрагмент сравниваемого документа</div>' +
+          '<div class="fragment-text">«' + escapeHtml(r.fragment_2) + '»</div></div>' +
+      '</div>' +
+      '<span class="result-tag">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>' +
+        '<line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' +
+        'Подозрение на одинаковые формулировки</span>' +
+      '</div>';
+  }
+
+  // Если есть реальные результаты — перестраиваем страницу
+  if (data) {
+    const results = data.results || [];
+    const list = document.getElementById('resultsList');
+
+    if (results.length === 0) {
+      list.innerHTML = '<div class="result-card" style="text-align:center;color:#6b7280;">' +
+        'Совпадений выше порога не обнаружено. Документы можно считать оригинальными ' +
+        'в части выбранных разделов.</div>';
+    } else {
+      list.innerHTML = results.map(buildCard).join('');
+    }
+
+    // Статистика
+    const stats = document.querySelectorAll('.stat-value');
+    stats[0].textContent = results.length;
+    stats[1].textContent = fmt(data.threshold || 0.75);
+    stats[2].textContent = results.length ? fmt(results[0].score) : '—';
+
+    // Подзаголовок
+    const sub = document.querySelector('.page-sub');
+    sub.innerHTML = results.length
+      ? 'Сверка завершена. Обнаружено <b>' + results.length + '</b> подозрительных пар фрагментов из ' +
+        (data.pairs_compared || 0) + ' сравнённых.'
+      : 'Сверка завершена. Подозрительных совпадений не обнаружено (сравнено ' +
+        (data.pairs_compared || 0) + ' пар).';
+
+    // Имена файлов в футере
+    const info = document.querySelector('.actions-info');
+    if (data.main_filename) {
+      info.textContent = 'Основной документ: ' + data.main_filename +
+                         ' · Сравниваемый: ' + data.compare_filename;
+    }
+  }
+
+  // Новая сверка → на первый шаг
+  document.getElementById('newBtn').addEventListener('click', () => {
+    sessionStorage.removeItem('sverka_parsed');
+    sessionStorage.removeItem('sverka_results');
+    window.location.href = 'page_1_upload.html';
+  });
+
+  // Экспорт отчёта (.txt)
+  document.getElementById('exportBtn').addEventListener('click', () => {
+    let r = '';
+    r += 'ОТЧЁТ О СЕМАНТИЧЕСКОЙ СВЕРКЕ ДОКУМЕНТОВ\n';
+    r += '======================================\n\n';
+    const mf = data && data.main_filename ? data.main_filename : 'example_1.docx';
+    const cf = data && data.compare_filename ? data.compare_filename : 'example_2.docx';
+    const th = data && data.threshold ? fmt(data.threshold) : '0,75';
+    r += 'Основной документ:      ' + mf + '\n';
+    r += 'Сравниваемый документ:  ' + cf + '\n';
+    r += 'Порог сходства:         ' + th + '\n';
+    const cards = document.querySelectorAll('.result-card');
+    const realCards = Array.from(cards).filter(c => c.querySelector('.score-value'));
+    r += 'Обнаружено пар:         ' + realCards.length + '\n\n';
+    r += '--------------------------------------\n\n';
+    realCards.forEach((card, i) => {
+      const title = card.querySelector('.pair-title').innerText.replace(/\s+/g, ' ').trim();
+      const score = card.querySelector('.score-value').textContent;
+      const frags = card.querySelectorAll('.fragment-text');
+      r += 'Пара ' + (i + 1) + '. ' + title + '\n';
+      r += 'Оценка сходства S = ' + score + '\n';
+      r += 'Подозрение на одинаковые формулировки\n\n';
+      r += '  Основной документ:\n  ' + frags[0].innerText.trim() + '\n\n';
+      r += '  Сравниваемый документ:\n  ' + frags[1].innerText.trim() + '\n\n';
+      r += '--------------------------------------\n\n';
+    });
+    const blob = new Blob([r], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'отчёт_сверки.txt';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+</script>
+
+</body>
+</html>
