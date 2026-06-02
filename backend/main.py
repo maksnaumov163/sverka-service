@@ -45,19 +45,24 @@ try:
 except Exception:
     _morph = None
 
+import threading
+
 _model = None
+_model_lock = threading.Lock()
+
 def get_model():
     global _model
     if _model is None:
-        from sentence_transformers import SentenceTransformer
-        _model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
+        with _model_lock:
+            if _model is None:
+                from sentence_transformers import SentenceTransformer
+                _model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
     return _model
 
 
 def preload_model():
-    """Загружает модель в память один раз при старте сервера,
-    чтобы первое сравнение для пользователя проходило быстро."""
-    print("Загрузка ML-модели при старте...", flush=True)
+    """Загружает модель в фоновом потоке — не блокирует старт сервера."""
+    print("Загрузка ML-модели в фоне...", flush=True)
     get_model()
     print("ML-модель загружена и готова к работе.", flush=True)
 
@@ -155,7 +160,8 @@ from contextlib import asynccontextmanager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    preload_model()
+    thread = threading.Thread(target=preload_model, daemon=True)
+    thread.start()
     yield
 
 
