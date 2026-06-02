@@ -150,12 +150,16 @@ def gaussian_kernel(v1, v2, h):
 # ======================================================================
 #  FastAPI
 # ======================================================================
-app = FastAPI(title="Сервис семантической сверки текстов")
+from contextlib import asynccontextmanager
 
 
-@app.on_event("startup")
-def on_startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     preload_model()
+    yield
+
+
+app = FastAPI(title="Сервис семантической сверки текстов", lifespan=lifespan)
 
 
 @app.get("/health")
