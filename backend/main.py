@@ -54,6 +54,14 @@ def get_model():
     return _model
 
 
+def preload_model():
+    """Загружает модель в память один раз при старте сервера,
+    чтобы первое сравнение для пользователя проходило быстро."""
+    print("Загрузка ML-модели при старте...", flush=True)
+    get_model()
+    print("ML-модель загружена и готова к работе.", flush=True)
+
+
 def extract_sections(file_bytes: bytes):
     doc = docx.Document(io.BytesIO(file_bytes))
     sections = []
@@ -145,6 +153,11 @@ def gaussian_kernel(v1, v2, h):
 app = FastAPI(title="Сервис семантической сверки текстов")
 
 
+@app.on_event("startup")
+def on_startup():
+    preload_model()
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
@@ -232,9 +245,3 @@ def api_compare(req: CompareRequest):
 # ----------------------------------------------------------------------
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
-
-if __name__ == "__main__":
-    import os
-    import uvicorn
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
