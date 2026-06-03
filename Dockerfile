@@ -2,6 +2,11 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# Многопоточность для PyTorch и tokenizers
+ENV OMP_NUM_THREADS=4
+ENV MKL_NUM_THREADS=4
+ENV TOKENIZERS_PARALLELISM=false
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
