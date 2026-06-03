@@ -45,7 +45,21 @@ try:
 except Exception:
     _morph = None
 
+# Кеш лемматизации — не обрабатывать одно слово дважды
+_lemma_cache: dict = {}
+
+def _lemmatize(word: str) -> str:
+    if word not in _lemma_cache:
+        _lemma_cache[word] = _morph.parse(word)[0].normal_form
+    return _lemma_cache[word]
+
+# PyTorch многопоточность — ускоряет inference модели
 import threading
+try:
+    import torch
+    torch.set_num_threads(4)
+except Exception:
+    pass
 
 _model = None
 _model_lock = threading.Lock()
@@ -108,7 +122,7 @@ def preprocess(text: str):
     text = re.sub(r"[^а-яёa-z0-9\s]", " ", text)
     tokens = [t for t in text.split() if t and t not in RUSSIAN_STOPWORDS]
     if _morph:
-        tokens = [_morph.parse(t)[0].normal_form for t in tokens]
+        tokens = [_lemmatize(t) for t in tokens]
     return tokens
 
 
